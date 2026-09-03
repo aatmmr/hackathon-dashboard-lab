@@ -275,16 +275,22 @@ ${input:feature:Describe the feature to add}
 
 ## Lab 4 — Build the `extract-ui-design` skill
 
-Goal: make Copilot extract the implemented design system from the code.
+Goal: make Copilot extract the implemented design system from the code, then prove that a procedure can find defects that normal gates miss.
 
 ### Steps
 
 1. Create this directory tree.
 2. Add each file below.
-3. Run Prompt 4A.
-4. Start a new chat.
-5. Run Prompt 4B.
-6. Confirm that Copilot selects the skill from its description.
+3. Make the script executable.
+4. Run Prompt 4A.
+5. Open `src/App.jsx` around line 266.
+6. Start the dev server if it is not already running.
+7. Click `$ new-team`.
+8. Look at the drag-and-drop upload area.
+9. Run Prompt 4B.
+10. Start a new chat.
+11. Run Prompt 4C.
+12. Confirm that Copilot selects the skill from its description.
 
 ```text
 .github/skills/extract-ui-design/
@@ -362,7 +368,13 @@ Write `docs/design-system.md` from
 Every token and every class you list must exist in the CSS. Do not invent a
 value. Do not copy values from a public design system.
 
-## Step 6 — Check a change
+## Step 6 — Check class coverage
+
+List every `className` in `src/App.jsx`. Mark each one `declared` or `missing`
+against `src/App.css` and `src/index.css`. Report every `missing` class as a
+defect, because it renders with no style.
+
+## Step 7 — Check a change
 
 When this skill is used to review a change, list every `className` in the
 diff. Mark each one `declared` or `missing` against `src/App.css`. Report
@@ -433,10 +445,32 @@ List conflicts between `src/index.css` and `src/App.css`.
 ```bash
 #!/usr/bin/env bash
 set -uo pipefail
+
 ROOT="$(git rev-parse --show-toplevel)"
 
+declared_selectors() {
+  grep -hoE '^[[:space:]]*\.[a-zA-Z0-9_\\:-]+' "$ROOT"/src/*.css \
+    | sed -E 's/^[[:space:]]*//; s/::?(before|after)$//; s/:(hover|focus|active|disabled|focus-within|focus-visible|not)$//' \
+    | sort -u
+}
+
+declared_classes() {
+  declared_selectors \
+    | sed 's/^\.//' \
+    | sed 's/\\:/:/g' \
+    | sort -u
+}
+
+used_classes() {
+  grep -hoE "className=(\"[^\"]*\"|'[^']*')" "$ROOT"/src/*.jsx \
+    | sed -E "s/^className=[\"']//; s/[\"']$//" \
+    | tr '[:space:]' '\n' \
+    | sed '/^$/d' \
+    | sort -u
+}
+
 echo "== Declared class selectors =="
-grep -hoE '^\.[a-zA-Z0-9_\\:-]+' "$ROOT"/src/*.css | sort -u
+declared_selectors
 
 echo
 echo "== Colour values, most used first =="
@@ -444,12 +478,20 @@ grep -hoE '#[0-9a-fA-F]{3,8}' "$ROOT"/src/*.css | sort | uniq -c | sort -rn
 
 echo
 echo "== Font stacks =="
-grep -hn 'font-family' "$ROOT"/src/*.css
+grep -Hn 'font-family' "$ROOT"/src/*.css | sed "s#$ROOT/##"
 
 echo
 echo "== Classes used in JSX =="
-grep -hoE 'className="[^"]*"' "$ROOT"/src/*.jsx \
-  | sed 's/className="//; s/"$//' | tr ' ' '\n' | sort -u
+used_classes
+
+echo
+echo "== JSX classes missing from CSS =="
+missing="$(comm -23 <(used_classes) <(declared_classes))"
+if [ -n "$missing" ]; then
+  printf '%s\n' "$missing"
+else
+  echo "(none)"
+fi
 ```
 
 Make the script executable.
@@ -458,13 +500,45 @@ Make the script executable.
 chmod +x .github/skills/extract-ui-design/scripts/collect-styles.sh
 ```
 
-### Prompt 4A — run the skill
+### Prompt 4A — find missing classes
+
+```text
+Use the /extract-ui-design skill to find every CSS class that the JSX uses but the stylesheet does not declare.
+```
+
+Expected output on `workshop/00-start`:
+
+```text
+== JSX classes missing from CSS ==
+flex-col
+min-h-[80vh]
+mt-1
+```
+
+Now see the bug with your own eyes.
+
+1. Open `src/App.jsx` around line 266.
+2. Find the upload area in `TeamForm`.
+3. Confirm that it uses `className="flex flex-col items-center gap-2 text-neutral-11"`.
+4. Confirm that `.flex` is declared in `src/App.css`.
+5. Confirm that `.flex-col` is not declared in `src/App.css` or `src/index.css`.
+6. Start the dev server if needed.
+7. Click `$ new-team`.
+8. Look at the drag-and-drop area.
+
+```sh
+npm run dev
+```
+
+The Upload icon and the text lay out in a row. They should be stacked. `npm run lint` passes. `npm run build` succeeds. The bug still ships.
+
+### Prompt 4B — write the design system
 
 ```text
 Use the /extract-ui-design skill to write docs/design-system.md for this repository.
 ```
 
-### Prompt 4B — prove automatic selection
+### Prompt 4C — prove automatic selection
 
 Start a new chat. Paste this prompt.
 
@@ -472,51 +546,14 @@ Start a new chat. Paste this prompt.
 What colours and fonts does this dashboard use? I need to add a new card that matches.
 ```
 
-### Prompt 4C — find the real defects
-
-This is the payoff. Run the skill's checker in a terminal.
-
-```text
-Use the /extract-ui-design skill to list every CSS class that the JSX uses but the stylesheet never declares.
-```
-
-Or run the script directly:
-
-```bash
-bash .github/skills/extract-ui-design/scripts/collect-styles.sh
-```
-
-Read the `== JSX classes missing from CSS ==` section. On the start branch it reports:
-
-```text
-flex-col
-min-h-[80vh]
-mt-1
-```
-
-Now see the bug with your own eyes:
-
-1. Open `src/App.jsx` and go to line 266. The upload area uses
-   `className="flex flex-col items-center gap-2 text-neutral-11"`.
-2. Confirm `.flex` is declared in `src/App.css` and `.flex-col` is not.
-3. Run `npm run dev`. Click `$ new-team`.
-4. Look at the drag-and-drop area. The icon and the label sit side by side.
-   They should be stacked.
-
-`npm run lint` passes. `npm run build` succeeds. The bug still ships.
-
-### Prompt 4D — fix them
-
-```text
-Declare the three missing classes in src/App.css so the JSX renders as intended. Follow the existing style of the file. Then run the checker again and confirm nothing is missing.
-```
-
 ### Discussion
 
-- `description` decides selection. Write it as what plus when.
-- Keep `SKILL.md` short. Push detail into `references/`.
-- `allowed-tools: shell` removes a confirmation step. Only pre-approve commands you wrote and trust.
-- The skill `name` must match its directory name, or the skill silently fails to load.
+- `description` decides selection.
+- Write descriptions as what plus when.
+- Keep `SKILL.md` short.
+- Push detail into `references/`.
+- `allowed-tools: shell` removes a confirmation step.
+- Only pre-approve commands you wrote and trust.
 - A skill can carry a script. An instruction cannot.
 - Instructions ask a model to be careful. A skill runs a procedure that checks.
 

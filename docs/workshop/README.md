@@ -73,17 +73,61 @@ The task is small. The result is visible. The failure is easy to explain.
 - A terminal.
 - Basic React and JavaScript knowledge.
 
+### The Codespaces fallback
+
+This repository ships a dev container at `.devcontainer/devcontainer.json`. It
+runs Node 20, installs the dependencies, installs GitHub Copilot CLI globally,
+and adds the Copilot and ESLint extensions. Attendees whose local setup fails
+can open a Codespace and start Lab 1 within a few minutes.
+
+Send this to attendees a day before the session:
+
+```text
+Before the workshop, please:
+1. Confirm you can sign in to GitHub Copilot in VS Code.
+2. Install GitHub Copilot CLI:  npm install -g @github/copilot
+3. Run  copilot  once in a terminal and sign in.
+4. Clone https://github.com/aatmmr/hackathon-dashboard-lab and run
+   npm install && npm run dev
+If any step fails, do not worry. Open the repository as a GitHub Codespace
+instead. Everything is preinstalled there.
+```
+
+Copilot CLI is needed for Lab 6, because hooks do not run in VS Code except in
+preview. Prompt files are the opposite case: they run only in the IDE.
+
 ## Checkpoint branches
+
+Build all seven with the tested helper script, from a clean clone:
+
+```bash
+bash docs/workshop/create-checkpoints.sh
+```
+
+It layers each checkpoint on the previous one and refuses to run on a dirty
+working tree or to overwrite existing branches. Push them with the command it
+prints at the end.
+
+Verified behaviour of the key branches:
+
+| Branch | `npm run lint` | `npm run build` | Classes used but not declared |
+|---|---|---|---|
+| `workshop/00-start` | red | passes | 3 |
+| `workshop/01-instructions` | green | passes | 3 |
+| `workshop/complete` | green | passes | 0 |
+
+The three undeclared classes survive until Lab 4. That is deliberate: the
+`extract-ui-design` skill must still be able to find them.
 
 | Branch | Contains | Facilitator note |
 |---|---|---|
-| `workshop/00-start` | Current `main`. The app builds and runs. It has no Copilot configuration. | `npm run lint` is red on a clean checkout. It reports the unused `createRoot` import and the unused `error` catch binding in `src/App.jsx`. |
+| `workshop/00-start` | Current `main`. The app builds and runs. It has no Copilot configuration. | `npm run lint` is red on a clean checkout. It reports the unused `createRoot` import and the unused `error` catch binding in `src/App.jsx`. It also uses three undeclared classes: `flex-col`, `min-h-[80vh]`, and `mt-1`. |
 | `workshop/01-instructions` | Noise fixes plus `.github/copilot-instructions.md` and two path-specific instruction files. | Lint is green here. Use this branch if Lab 2 runs long. |
 | `workshop/02-prompt` | The `add-dashboard-feature.prompt.md` prompt file. | Use VS Code. Prompt files do not run on GitHub.com or in Copilot CLI. |
 | `workshop/03-skill` | The `extract-ui-design` skill plus generated `docs/design-system.md`. | The skill extracts tokens from `src/App.css` and `src/App.jsx`. Its `collect-styles.sh` script reports three classes the JSX uses but the CSS never declares: `flex-col`, `min-h-[80vh]`, and `mt-1`. Demonstrate the `flex-col` layout bug live in the upload dialog. |
 | `workshop/04-agent` | The `design-system-reviewer.agent.md` custom agent. | It has read and search tools only. |
 | `workshop/05-hooks` | The `repo-policy.json` hook and `protect-paths.sh` script. | Use Copilot CLI. Restart the CLI after hook changes. |
-| `workshop/complete` | Search and room filter implemented, plus all configuration. | Use this branch for the final comparison. It declares `flex-col`, `mt-1`, and `min-h-screen-80` in `src/App.css`, and replaces the unusable `min-h-[80vh]` class in the JSX. |
+| `workshop/complete` | Search and room filter implemented, plus all configuration. | Use this branch for the final comparison. It declares `flex-col`, `min-h-[80vh]`, and `mt-1` in `src/App.css`. |
 
 ## Repository audit at a glance
 

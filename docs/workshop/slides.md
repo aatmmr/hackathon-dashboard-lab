@@ -99,10 +99,10 @@ Point to the files: `package.json`, `src/App.jsx`, `src/App.css`, `src/index.css
 
 # The Tailwind that is not there
 
-- `App.css` imitates Tailwind.
+- `flex-col` is used. It is not declared.
+- The upload area renders in a row.
 - Tailwind is not installed.
 - Only declared classes exist.
-- `flex-col` is used. It is not declared.
 - `.rounded-lg` means radius `0`.
 - `.h-48` means height `20rem`.
 

@@ -51,7 +51,6 @@ Optional: `excludeAgent: "code-review"` or `excludeAgent: "cloud-agent"`.
 name: extract-ui-design
 description: Extracts the design system from CSS and JSX. Use when asked to document UI tokens or check visible UI changes.
 license: MIT
-allowed-tools: shell
 ---
 ```
 
@@ -63,7 +62,7 @@ Required: `name` and `description`.
 
 Optional: `license`, `allowed-tools`.
 
-`allowed-tools` is a space-separated string. Security warning: pre-approving `shell` or `bash` removes the confirmation step and enables prompt injection.
+`allowed-tools` is a space-separated string, for example `allowed-tools: shell`. Leave it out unless you need it. Security warning: pre-approving `shell` or `bash` removes the confirmation step and enables prompt injection.
 
 Keep `SKILL.md` under 500 lines. Put detail in `references/`.
 
@@ -98,12 +97,12 @@ description: Add a dashboard feature that follows the design system.
 name: add-dashboard-feature
 argument-hint: Describe the feature
 agent: agent
-model: gpt-5.4
-tools: ["read", "edit", "search"]
 ---
 ```
 
 Fields: `description`, `name`, `argument-hint`, `agent`, `model`, `tools`.
+
+Leave out `model` and `tools` unless you need them. Model names change, and VS Code tool names are namespaced and version-specific. A wrong name wastes lab time.
 
 `agent` can be `ask`, `agent`, `plan`, or a custom agent name.
 
@@ -135,8 +134,10 @@ Events: `sessionStart`, `sessionEnd`, `userPromptSubmitted`, `preToolUse`, `post
 `preToolUse` stdin:
 
 ```json
-{ "sessionId": "...", "timestamp": "...", "cwd": "...", "toolName": "...", "toolArgs": {} }
+{ "sessionId": "...", "timestamp": 1750000000000, "cwd": "...", "toolName": "edit", "toolArgs": {} }
 ```
+
+`timestamp` is a Unix time in milliseconds in this dialect. In the VS Code dialect it is an ISO 8601 string.
 
 Stdout is exactly one object:
 

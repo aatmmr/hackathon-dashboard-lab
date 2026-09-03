@@ -1,0 +1,21 @@
+---
+applyTo: "src/**/*.css"
+---
+
+- Add application styles to `src/App.css`.
+- Leave `src/index.css` unchanged.
+- `src/index.css` is leftover Vite template CSS that conflicts with `src/App.css` on `:root`.
+- Use `#000000` and `#001100` for backgrounds.
+- Use `#00ff41` for primary text and borders.
+- Use `#00cc33` for secondary text.
+- Use `#00ffff` for accents.
+- Use `#ff0040` and `#ff2060` for danger states.
+- Keep `border-radius: 0`.
+- Use monospace font stacks only.
+- Check declared utility classes in `src/App.css` before reusing a class name.
+- Do not assume Tailwind semantics.
+- `.rounded-lg` means `border-radius: 0` in this repository.
+- `.h-48` means `height: 20rem` in this repository.
+- Follow existing names.
+- Use layout utilities such as `.gap-2` and component classes such as `.card`, `.btn`, and `.dialog`.
+- Do not add a CSS framework, CSS preprocessor, CSS-in-JS, or PostCSS plugin.

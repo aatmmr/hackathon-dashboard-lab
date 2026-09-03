@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "bash scripts/copilot-hooks/protect-paths.sh",
+        "timeoutSec": 5
+      }
+    ]
+  }
+}

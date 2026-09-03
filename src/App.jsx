@@ -1,5 +1,4 @@
 import * as React from "react";
-import { createRoot } from "react-dom/client";
 import { 
   Plus,
   Users,
@@ -11,9 +10,13 @@ import {
   Play,
   Pause,
   Clock,
-  Pencil
+  MagnifyingGlass,
+  Pencil,
+  X
 } from "@phosphor-icons/react";
 import './App.css';
+
+const ALL_ROOMS = "__all_rooms__";
 
 // Simple localStorage-based key-value hook to replace useKV
 const useKV = (key, defaultValue) => {
@@ -21,7 +24,7 @@ const useKV = (key, defaultValue) => {
     try {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : defaultValue;
-    } catch (error) {
+    } catch {
       return defaultValue;
     }
   });
@@ -292,6 +295,8 @@ function App() {
   const [isAddingTeam, setIsAddingTeam] = React.useState(false);
   const [editingTeam, setEditingTeam] = React.useState(null);
   const [teamToDelete, setTeamToDelete] = React.useState(null);
+  const [teamSearch, setTeamSearch] = React.useState("");
+  const [roomFilter, setRoomFilter] = React.useState(ALL_ROOMS);
 
   const emptyTeam = {
     name: "",
@@ -299,6 +304,26 @@ function App() {
     description: "",
     room: "",
     logo: null
+  };
+
+  const searchTerm = teamSearch.trim().toLowerCase();
+  const roomOptions = Array.from(new Set(
+    teams
+      .map(team => team.room)
+      .filter(Boolean)
+  )).sort((a, b) => a.localeCompare(b));
+  const hasActiveFilters = searchTerm !== "" || roomFilter !== ALL_ROOMS;
+  const filteredTeams = teams.filter(team => {
+    const matchesSearch = !searchTerm ||
+      (team.name || "").toLowerCase().includes(searchTerm) ||
+      (team.topic || "").toLowerCase().includes(searchTerm);
+    const matchesRoom = roomFilter === ALL_ROOMS || team.room === roomFilter;
+    return matchesSearch && matchesRoom;
+  });
+
+  const resetFilters = () => {
+    setTeamSearch("");
+    setRoomFilter(ALL_ROOMS);
   };
 
   // Handler to add a new team
@@ -325,7 +350,7 @@ function App() {
 
   return (
     <div className="app">
-      <div className="container min-h-[80vh]">
+      <div className="container min-h-screen-80">
         {/* Header Section */}
         <div className="header flex justify-between items-center mb-6 bg-neutral-2 p-4 border border-neutral-6">
           <div className="flex items-center gap-2">
@@ -404,15 +429,73 @@ function App() {
             </div>
           )}
 
+          {teams.length > 0 && (
+            <div className="card mb-4 bg-neutral-2 border-neutral-6 p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="filter-label font-mono text-sm text-neutral-11" htmlFor="team-search">
+                    Search teams
+                  </label>
+                  <div className="input-group">
+                    <MagnifyingGlass />
+                    <input
+                      id="team-search"
+                      type="search"
+                      placeholder="$ grep name or topic"
+                      value={teamSearch}
+                      onChange={(e) => setTeamSearch(e.target.value)}
+                      className="input bg-neutral-1 border-neutral-6"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="filter-label font-mono text-sm text-neutral-11" htmlFor="room-filter">
+                    Room filter
+                  </label>
+                  <div className="input-group">
+                    <Buildings />
+                    <select
+                      id="room-filter"
+                      value={roomFilter}
+                      onChange={(e) => setRoomFilter(e.target.value)}
+                      className="input bg-neutral-1 border-neutral-6"
+                    >
+                      <option value={ALL_ROOMS}>all rooms</option>
+                      {roomOptions.map(room => (
+                        <option key={room} value={room}>{room}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="filter-summary flex justify-between items-center gap-4">
+                <p className="font-mono text-neutral-11" aria-live="polite">
+                  {filteredTeams.length} / {teams.length} teams
+                </p>
+                {hasActiveFilters && (
+                  <button className="btn font-mono" onClick={resetFilters}>
+                    <X />
+                    $ reset
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Teams List */}
           {teams.length === 0 ? (
             <div className="text-center p-8 bg-neutral-2 border border-neutral-6">
               <p className="text-lg font-mono text-neutral-11">No teams registered yet</p>
               <p className="font-mono text-neutral-11">Click '$ new-team' to add one</p>
             </div>
+          ) : filteredTeams.length === 0 ? (
+            <div className="text-center p-8 bg-neutral-2 border border-neutral-6">
+              <p className="text-lg font-mono text-neutral-11">No teams match your filters</p>
+              <p className="font-mono text-neutral-11">Try another search, choose all rooms, or use '$ reset'</p>
+            </div>
           ) : (
             <div className="teams-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {teams.map(team => (
+              {filteredTeams.map(team => (
                 <div key={team.id} className="card bg-neutral-2 border-neutral-6">
                   <div className="absolute top-2 right-2 flex gap-2 z-10">
                     <button
